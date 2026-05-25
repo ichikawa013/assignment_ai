@@ -6,7 +6,7 @@ import clsx from 'clsx'
 const navItems = [
   { label: 'Home', href: '/', icon: '⊞' },
   { label: 'My Groups', href: '/groups', icon: '👥' },
-  { label: 'Assignments', href: '/assignments', icon: '📋' },
+  
   { label: "AI Teacher's Toolkit", href: '/toolkit', icon: '🤖' },
   { label: 'My Library', href: '/library', icon: '📚' },
 ]
