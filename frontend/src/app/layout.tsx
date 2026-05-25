@@ -1,6 +1,11 @@
+// app/layout.tsx
+// NOTE: RootLayout is a Server Component — sidebar state is read
+// client-side via a wrapper so we avoid hydration mismatches.
+
 import type { Metadata } from 'next'
 import './globals.css'
 import Sidebar from '@/components/Sidebar'
+import MainWrapper from '../components/MainWrapper'
 
 export const metadata: Metadata = {
   title: 'VedaAI - Assessment Creator',
@@ -23,9 +28,7 @@ export default function RootLayout({
       <body>
         <div className="flex min-h-screen">
           <Sidebar />
-          <main className="ml-56 flex-1 min-h-screen bg-[#f5f5f0]">
-            {children}
-          </main>
+          <MainWrapper>{children}</MainWrapper>
         </div>
       </body>
     </html>
