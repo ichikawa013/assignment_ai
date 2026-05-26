@@ -9,7 +9,7 @@ export default function AssignmentsPage() {
   useEffect(() => {
     const fetchAssignments = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/assignments')
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/assignments`)
         if (!res.ok) return
         const data = await res.json()
         const current = useAssignmentStore.getState().assignments

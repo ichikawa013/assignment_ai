@@ -1,7 +1,8 @@
 'use client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useAssignmentStore } from '@/store/assignmentStore'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { GeneratedPaper } from '@/store/assignmentStore'
 
 const DIFFICULTY_STYLES: Record<string, string> = {
   Easy: 'bg-green-50 text-green-700 border border-green-200',
@@ -11,12 +12,60 @@ const DIFFICULTY_STYLES: Record<string, string> = {
 
 export default function OutputPage() {
   const router = useRouter()
-  const { generatedPaper, resetForm } = useAssignmentStore()
+  const params = useParams()
+  const { resetForm } = useAssignmentStore()
   const [studentName, setStudentName] = useState('')
   const [rollNumber, setRollNumber] = useState('')
   const [section, setSection] = useState('')
 
-  if (!generatedPaper) {
+  const [paper, setPaper] = useState<GeneratedPaper | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const stored = useAssignmentStore.getState().generatedPaper
+    if (stored) {
+      setPaper(stored)// eslint-disable-line react-hooks/set-state-in-effect
+      setLoading(false)
+      return
+    }
+    const fetchPaper = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/assignments/${params.id}`)
+        if (!res.ok) throw new Error('Not found')
+        const data = await res.json()
+      console.log('API response:', data)
+        const a = data.assignment ?? data
+        setPaper({
+          assignmentId: a._id,
+          schoolName: a.schoolName,
+          subject: a.subject,
+          grade: a.grade,
+          topic: a.topic,
+          timeAllowed: a.generatedPaper.timeAllowed,
+          totalMarks: a.generatedPaper.totalMarks,
+          sections: a.generatedPaper.sections,
+        })
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPaper()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-gray-500">Loading paper...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!paper) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -33,11 +82,7 @@ export default function OutputPage() {
   }
 
   const handlePrint = () => window.print()
-
-  const handleRegenerate = () => {
-    router.push('/assignments/generate')
-  }
-
+  const handleRegenerate = () => router.push('/assignments/generate')
   const handleNewAssignment = () => {
     resetForm()
     router.push('/assignments/create')
@@ -80,22 +125,22 @@ export default function OutputPage() {
         {/* Header */}
         <div className="border-b-2 border-gray-900 p-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900 tracking-wide uppercase">
-            {generatedPaper.schoolName}
+            {paper.schoolName}
           </h1>
           <div className="mt-2 space-y-1">
             <p className="text-base font-medium text-gray-700">
-              Subject: {generatedPaper.subject}
+              Subject: {paper.subject}
             </p>
             <p className="text-base font-medium text-gray-700">
-              Class: {generatedPaper.grade}
+              Class: {paper.grade}
             </p>
             <p className="text-sm text-gray-500">
-              Topic: {generatedPaper.topic}
+              Topic: {paper.topic}
             </p>
           </div>
           <div className="flex justify-between mt-4 text-sm text-gray-600">
-            <span>Time Allowed: {generatedPaper.timeAllowed}</span>
-            <span>Maximum Marks: {generatedPaper.totalMarks}</span>
+            <span>Time Allowed: {paper.timeAllowed}</span>
+            <span>Maximum Marks: {paper.totalMarks}</span>
           </div>
         </div>
 
@@ -116,7 +161,7 @@ export default function OutputPage() {
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
                 placeholder="____________________"
-                className="w-full border-b border-gray-400 pb-1 text-sm focus:outline-none focus:border-gray-900 bg-transparent print:border-gray-400"
+                className="w-full border-b border-gray-400 pb-1 text-sm focus:outline-none focus:border-gray-900 bg-transparent"
               />
             </div>
             <div>
@@ -144,41 +189,34 @@ export default function OutputPage() {
 
         {/* Sections */}
         <div className="px-8 py-6 space-y-8">
-          {generatedPaper.sections.map((section, sIndex) => (
+          {paper.sections.map((sec, sIndex) => (
             <div key={sIndex}>
-              {/* Section Header */}
               <div className="text-center mb-4">
                 <h2 className="text-base font-bold text-gray-900 uppercase tracking-widest">
-                  {section.title}
+                  {sec.title}
                 </h2>
                 <p className="text-sm text-gray-500 mt-1 italic">
-                  {section.instruction}
+                  {sec.instruction}
                 </p>
               </div>
-
-              {/* Questions */}
               <div className="space-y-4">
-                {section.questions.map((question, qIndex) => (
+                {sec.questions.map((question, qIndex) => (
                   <div
                     key={question.id}
                     className="flex gap-4 p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors"
                   >
-                    {/* Question Number */}
                     <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-medium">
                       {qIndex + 1}
                     </div>
-
-                    {/* Question Content */}
                     <div className="flex-1">
                       <p className="text-sm text-gray-900 leading-relaxed">
                         {question.text}
                       </p>
                       <div className="flex items-center gap-3 mt-2">
                         <span
-                          className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
-                            DIFFICULTY_STYLES[question.difficulty] ||
+                          className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${DIFFICULTY_STYLES[question.difficulty] ||
                             DIFFICULTY_STYLES['Easy']
-                          }`}
+                            }`}
                         >
                           {question.difficulty}
                         </span>
@@ -200,7 +238,6 @@ export default function OutputPage() {
         </div>
       </div>
 
-      {/* Print Styles */}
       <style jsx global>{`
         @media print {
           .print\\:hidden { display: none !important; }
