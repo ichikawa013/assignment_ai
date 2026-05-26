@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import Assignment from '../models/Assignment'
+import { log } from 'node:console'
 
 export const createAssignment = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -66,8 +67,9 @@ export const getAssignmentById = async (req: Request, res: Response): Promise<vo
       res.status(404).json({ error: 'Assignment not found' })
       return
     }
-
-    res.json({ assignment })
+    console.log(assignment);
+    
+    res.json({assignment})
   } catch (err) {
     console.error('Get assignment error:', err)
     res.status(500).json({ error: 'Failed to fetch assignment' })
